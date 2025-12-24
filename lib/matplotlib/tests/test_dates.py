@@ -630,9 +630,30 @@ def test_offset_changes():
     ax.set_xlim(d1, d1 + datetime.timedelta(weeks=3))
     fig.draw_without_rendering()
     assert formatter.get_offset() == '1997-Jan'
+    ax.set_xlim(datetime.datetime(1997, 2, 1), datetime.datetime(1997, 9, 1))
+    fig.draw_without_rendering()
+    assert formatter.get_offset() == '1997'
     ax.set_xlim(d1, d1 + datetime.timedelta(weeks=520))
     fig.draw_without_rendering()
     assert formatter.get_offset() == ''
+
+
+def test_concise_formatter_year_offset_without_january():
+    fig, ax = plt.subplots()
+
+    start = datetime.datetime(2021, 2, 1)
+    end = datetime.datetime(2021, 9, 30)
+
+    locator = mdates.AutoDateLocator()
+    formatter = mdates.ConciseDateFormatter(locator)
+    ax.xaxis.set_major_locator(locator)
+    ax.xaxis.set_major_formatter(formatter)
+
+    ax.plot([start, end], [0, 1])
+    ax.set_xlim(start, end)
+    fig.draw_without_rendering()
+
+    assert formatter.get_offset() == '2021'
 
 
 @pytest.mark.parametrize('t_delta, expected', [
