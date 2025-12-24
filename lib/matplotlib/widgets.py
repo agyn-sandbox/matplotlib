@@ -2139,12 +2139,16 @@ class SpanSelector(_SelectorWidget):
             self.connect_default_events()
 
         if self.direction == 'horizontal':
+            x0 = ax.get_xlim()[0]
             trans = ax.get_xaxis_transform()
+            xy = (x0, 0)
             w, h = 0, 1
         else:
+            y0 = ax.get_ylim()[0]
             trans = ax.get_yaxis_transform()
+            xy = (0, y0)
             w, h = 1, 0
-        self._rect = Rectangle((0, 0), w, h,
+        self._rect = Rectangle(xy, w, h,
                                transform=trans,
                                visible=False,
                                **self._rectprops)
