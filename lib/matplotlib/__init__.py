@@ -674,7 +674,12 @@ class RcParams(MutableMapping, dict):
             val = dict.__getitem__(self, key)
             if val is rcsetup._auto_backend_sentinel:
                 from matplotlib import pyplot as plt
+                if plt._backend_mod is not None:
+                    import matplotlib.backends
+                    return matplotlib.backends.backend
                 plt.switch_backend(rcsetup._auto_backend_sentinel)
+                return dict.__getitem__(self, key)
+            return val
 
         return dict.__getitem__(self, key)
 

@@ -270,6 +270,33 @@ def test_lazy_auto_backend_selection():
                 timeout=_test_timeout)
 
 
+def _impl_get_backend_preserves_figures():
+    import matplotlib
+    from matplotlib import get_backend, rc_context, rcsetup
+    from matplotlib import pyplot as plt
+
+    plt.close("all")
+    matplotlib.rcParams["backend"] = rcsetup._auto_backend_sentinel
+
+    with rc_context():
+        plt.figure()
+
+    matplotlib.rcParams["backend"] = rcsetup._auto_backend_sentinel
+    assert plt._backend_mod is not None
+
+    gcf = plt._pylab_helpers.Gcf
+    assert tuple(gcf.figs.items())
+    before = (id(gcf), tuple(gcf.figs.items()))
+    get_backend()
+    after = (id(gcf), tuple(gcf.figs.items()))
+    assert before == after
+
+
+def test_get_backend_preserves_figures():
+    _run_helper(_impl_get_backend_preserves_figures,
+                timeout=_test_timeout)
+
+
 def _implqt5agg():
     import matplotlib.backends.backend_qt5agg  # noqa
     import sys
