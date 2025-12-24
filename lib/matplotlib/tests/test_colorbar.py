@@ -148,6 +148,40 @@ def test_colorbar_extension_inverted_axis(orientation, extend, expected):
         assert len(cbar._extend_patches) == 1
 
 
+@pytest.mark.parametrize("extend", ["min", "max", "both"])
+@pytest.mark.parametrize("orientation", ["vertical", "horizontal"])
+def test_colorbar_drawedges_extends_extremes(extend, orientation):
+    levels = np.array([0.0, 1.0, 2.0, 3.0])
+    base_colors = ["#4c72b0", "#55a868", "#c44e52"]
+    if extend in {"min", "both"}:
+        color_sequence = ["#000000", *base_colors]
+    else:
+        color_sequence = [*base_colors]
+    if extend in {"max", "both"}:
+        color_sequence = [*color_sequence, "#ffffff"]
+    cmap, norm = mcolors.from_levels_and_colors(
+        levels, color_sequence, extend=extend)
+    fig, ax = plt.subplots()
+    try:
+        sm = cm.ScalarMappable(norm=norm, cmap=cmap)
+        sm.set_array([])
+        cbar = fig.colorbar(sm, ax=ax, orientation=orientation,
+                            drawedges=True)
+        segments = cbar.dividers.get_segments()
+    finally:
+        plt.close(fig)
+    axis_index = 1 if orientation == "vertical" else 0
+    positions = np.array([segment[0, axis_index] for segment in segments])
+    expected = len(levels) - 2
+    if extend in {"min", "both"}:
+        expected += 1
+        assert np.isclose(positions.min(), levels[0])
+    if extend in {"max", "both"}:
+        expected += 1
+        assert np.isclose(positions.max(), levels[-1])
+    assert len(segments) == expected
+
+
 @pytest.mark.parametrize('use_gridspec', [True, False])
 @image_comparison(['cbar_with_orientation',
                    'cbar_locationing',
