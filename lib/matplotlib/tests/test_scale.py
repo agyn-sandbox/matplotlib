@@ -148,6 +148,12 @@ def test_logscale_reversed_limits_invert():
     assert ax.xaxis_inverted()
     assert_allclose(ax.get_xlim(), (x.max(), x.min()))
 
+    fig, ax = plt.subplots()
+    ax.set_yscale('log')
+    locator = ax.yaxis.get_major_locator()
+    ax.dataLim._minpos[1] = 100
+    assert_allclose(locator.nonsingular(10, -1), (100, 10))
+
 
 @image_comparison(baseline_images=['logscale_nonpos_values'], remove_text=True,
                   extensions=['png'], tol=0.02, style='mpl20')

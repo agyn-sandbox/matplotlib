@@ -2396,7 +2396,10 @@ class LogLocator(Locator):
         if vmin == vmax:
             vmin = _decade_less(vmin, self._base)
             vmax = _decade_greater(vmax, self._base)
-        return (vmax, vmin) if descending else (vmin, vmax)
+        if vmin > vmax:
+            vmin, vmax = vmax, vmin
+        lo, hi = vmin, vmax
+        return (hi, lo) if descending else (lo, hi)
 
 
 class SymmetricalLogLocator(Locator):
