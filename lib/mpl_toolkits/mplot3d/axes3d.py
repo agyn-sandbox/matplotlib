@@ -387,6 +387,10 @@ class Axes3D(Axes):
 
     @martist.allow_rasterization
     def draw(self, renderer):
+        if renderer is None:
+            raise RuntimeError("No renderer defined")
+        if not self.get_visible():
+            return
         self._unstale_viewLim()
 
         # draw the background patch
