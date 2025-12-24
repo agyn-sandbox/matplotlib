@@ -325,9 +325,9 @@ def test_date_formatter_callable():
     (datetime.timedelta(weeks=52 * 200),
      [r'$\mathdefault{%d}$' % (year,) for year in range(1990, 2171, 20)]),
     (datetime.timedelta(days=30),
-     [r'Jan$\mathdefault{ %02d 1990}$' % (day,) for day in range(1, 32, 3)]),
+     [r'Jan$\mathdefault{\;%02d\;1990}$' % (day,) for day in range(1, 32, 3)]),
     (datetime.timedelta(hours=20),
-     [r'$\mathdefault{%02d:00:00}$' % (hour,) for hour in range(0, 21, 2)]),
+     [r'$\mathdefault{%02d{:}00{:}00}$' % (hour,) for hour in range(0, 21, 2)]),
 ])
 def test_date_formatter_usetex(delta, expected):
     d1 = datetime.datetime(1990, 1, 1)
@@ -609,14 +609,14 @@ def test_concise_formatter_show_offset(t_delta, expected):
       '$\\mathdefault{25}$', '$\\mathdefault{29}$', 'Feb',
       '$\\mathdefault{05}$', '$\\mathdefault{09}$']),
     (datetime.timedelta(hours=40),
-     ['Jan$\\mathdefault{{-}01}$', '$\\mathdefault{04:00}$',
-      '$\\mathdefault{08:00}$', '$\\mathdefault{12:00}$',
-      '$\\mathdefault{16:00}$', '$\\mathdefault{20:00}$',
-      'Jan$\\mathdefault{{-}02}$', '$\\mathdefault{04:00}$',
-      '$\\mathdefault{08:00}$', '$\\mathdefault{12:00}$',
-      '$\\mathdefault{16:00}$']),
+     ['Jan$\\mathdefault{{-}01}$', '$\\mathdefault{04{:}00}$',
+      '$\\mathdefault{08{:}00}$', '$\\mathdefault{12{:}00}$',
+      '$\\mathdefault{16{:}00}$', '$\\mathdefault{20{:}00}$',
+      'Jan$\\mathdefault{{-}02}$', '$\\mathdefault{04{:}00}$',
+      '$\\mathdefault{08{:}00}$', '$\\mathdefault{12{:}00}$',
+      '$\\mathdefault{16{:}00}$']),
     (datetime.timedelta(seconds=2),
-     ['$\\mathdefault{59.5}$', '$\\mathdefault{00:00}$',
+     ['$\\mathdefault{59.5}$', '$\\mathdefault{00{:}00}$',
       '$\\mathdefault{00.5}$', '$\\mathdefault{01.0}$',
       '$\\mathdefault{01.5}$', '$\\mathdefault{02.0}$',
       '$\\mathdefault{02.5}$']),
@@ -1200,3 +1200,12 @@ def test_julian2num():
     mdates.set_epoch('1970-01-01T00:00:00')
     assert mdates.julian2num(2440588.5) == 1.0
     assert mdates.num2julian(2.0) == 2440589.5
+
+
+def test_wrap_in_tex_protects_characters():
+    # Directly test the TeX wrapper used by date formatters when usetex=True.
+    from matplotlib.dates import _wrap_in_tex
+    assert _wrap_in_tex('12:34') == '$\\mathdefault{12{:}34}$'
+    assert _wrap_in_tex('2021-01-02') == '$\\mathdefault{2021{-}01{-}02}$'
+    assert _wrap_in_tex('Jan 02 1990') == 'Jan$\\mathdefault{\\;02\\;1990}$'
+    assert _wrap_in_tex('00:00:59') == '$\\mathdefault{00{:}00{:}59}$'
