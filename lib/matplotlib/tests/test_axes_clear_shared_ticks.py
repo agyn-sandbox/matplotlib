@@ -28,17 +28,17 @@ def test_clear_respects_tick_side_defaults():
                 for tick in ax.yaxis.get_major_ticks()
             )
             x_minor = ax.xaxis.get_minor_ticks()
-            if x_minor:
-                assert all(
-                    not tick.tick2line.get_visible()
-                    for tick in x_minor
-                )
+            assert x_minor
+            assert all(
+                not tick.tick2line.get_visible()
+                for tick in x_minor
+            )
             y_minor = ax.yaxis.get_minor_ticks()
-            if y_minor:
-                assert all(
-                    not tick.tick2line.get_visible()
-                    for tick in y_minor
-                )
+            assert y_minor
+            assert all(
+                not tick.tick2line.get_visible()
+                for tick in y_minor
+            )
         finally:
             plt.close(fig)
 

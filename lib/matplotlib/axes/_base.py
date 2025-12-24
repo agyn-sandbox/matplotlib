@@ -650,36 +650,7 @@ class _AxesBase(martist.Artist):
                 axis.callbacks.connect(
                     'units', self._unit_change_handler(name)))
 
-        rcParams = mpl.rcParams
-        self.tick_params(
-            top=rcParams['xtick.top'] and rcParams['xtick.minor.top'],
-            bottom=rcParams['xtick.bottom'] and rcParams['xtick.minor.bottom'],
-            labeltop=(rcParams['xtick.labeltop'] and
-                      rcParams['xtick.minor.top']),
-            labelbottom=(rcParams['xtick.labelbottom'] and
-                         rcParams['xtick.minor.bottom']),
-            left=rcParams['ytick.left'] and rcParams['ytick.minor.left'],
-            right=rcParams['ytick.right'] and rcParams['ytick.minor.right'],
-            labelleft=(rcParams['ytick.labelleft'] and
-                       rcParams['ytick.minor.left']),
-            labelright=(rcParams['ytick.labelright'] and
-                        rcParams['ytick.minor.right']),
-            which='minor')
-
-        self.tick_params(
-            top=rcParams['xtick.top'] and rcParams['xtick.major.top'],
-            bottom=rcParams['xtick.bottom'] and rcParams['xtick.major.bottom'],
-            labeltop=(rcParams['xtick.labeltop'] and
-                      rcParams['xtick.major.top']),
-            labelbottom=(rcParams['xtick.labelbottom'] and
-                         rcParams['xtick.major.bottom']),
-            left=rcParams['ytick.left'] and rcParams['ytick.major.left'],
-            right=rcParams['ytick.right'] and rcParams['ytick.major.right'],
-            labelleft=(rcParams['ytick.labelleft'] and
-                       rcParams['ytick.major.left']),
-            labelright=(rcParams['ytick.labelright'] and
-                        rcParams['ytick.major.right']),
-            which='major')
+        self._apply_rcparams_tick_visibility()
 
     def __getstate__(self):
         # The renderer should be re-created by the figure, and then cached at
@@ -1179,6 +1150,38 @@ class _AxesBase(martist.Artist):
         self.set_ylim(y0, y1, emit=False, auto=other.get_autoscaley_on())
         self.yaxis._scale = other.yaxis._scale
 
+    def _apply_rcparams_tick_visibility(self):
+        rcParams = mpl.rcParams
+        self.tick_params(
+            top=rcParams['xtick.top'] and rcParams['xtick.minor.top'],
+            bottom=rcParams['xtick.bottom'] and rcParams['xtick.minor.bottom'],
+            labeltop=(rcParams['xtick.labeltop'] and
+                      rcParams['xtick.minor.top']),
+            labelbottom=(rcParams['xtick.labelbottom'] and
+                         rcParams['xtick.minor.bottom']),
+            left=rcParams['ytick.left'] and rcParams['ytick.minor.left'],
+            right=rcParams['ytick.right'] and rcParams['ytick.minor.right'],
+            labelleft=(rcParams['ytick.labelleft'] and
+                       rcParams['ytick.minor.left']),
+            labelright=(rcParams['ytick.labelright'] and
+                        rcParams['ytick.minor.right']),
+            which='minor')
+
+        self.tick_params(
+            top=rcParams['xtick.top'] and rcParams['xtick.major.top'],
+            bottom=rcParams['xtick.bottom'] and rcParams['xtick.major.bottom'],
+            labeltop=(rcParams['xtick.labeltop'] and
+                      rcParams['xtick.major.top']),
+            labelbottom=(rcParams['xtick.labelbottom'] and
+                         rcParams['xtick.major.bottom']),
+            left=rcParams['ytick.left'] and rcParams['ytick.major.left'],
+            right=rcParams['ytick.right'] and rcParams['ytick.major.right'],
+            labelleft=(rcParams['ytick.labelleft'] and
+                       rcParams['ytick.major.left']),
+            labelright=(rcParams['ytick.labelright'] and
+                        rcParams['ytick.major.right']),
+            which='major')
+
     def cla(self):
         """Clear the axes."""
         # Note: this is called by Axes.__init__()
@@ -1309,36 +1312,7 @@ class _AxesBase(martist.Artist):
             self.yaxis.set_visible(yaxis_visible)
             self.patch.set_visible(patch_visible)
 
-        rcParams = mpl.rcParams
-        self.tick_params(
-            top=rcParams['xtick.top'] and rcParams['xtick.minor.top'],
-            bottom=rcParams['xtick.bottom'] and rcParams['xtick.minor.bottom'],
-            labeltop=(rcParams['xtick.labeltop'] and
-                      rcParams['xtick.minor.top']),
-            labelbottom=(rcParams['xtick.labelbottom'] and
-                         rcParams['xtick.minor.bottom']),
-            left=rcParams['ytick.left'] and rcParams['ytick.minor.left'],
-            right=rcParams['ytick.right'] and rcParams['ytick.minor.right'],
-            labelleft=(rcParams['ytick.labelleft'] and
-                       rcParams['ytick.minor.left']),
-            labelright=(rcParams['ytick.labelright'] and
-                        rcParams['ytick.minor.right']),
-            which='minor')
-
-        self.tick_params(
-            top=rcParams['xtick.top'] and rcParams['xtick.major.top'],
-            bottom=rcParams['xtick.bottom'] and rcParams['xtick.major.bottom'],
-            labeltop=(rcParams['xtick.labeltop'] and
-                      rcParams['xtick.major.top']),
-            labelbottom=(rcParams['xtick.labelbottom'] and
-                         rcParams['xtick.major.bottom']),
-            left=rcParams['ytick.left'] and rcParams['ytick.major.left'],
-            right=rcParams['ytick.right'] and rcParams['ytick.major.right'],
-            labelleft=(rcParams['ytick.labelleft'] and
-                       rcParams['ytick.major.left']),
-            labelright=(rcParams['ytick.labelright'] and
-                        rcParams['ytick.major.right']),
-            which='major')
+        self._apply_rcparams_tick_visibility()
 
         label_outer_xaxis = getattr(self, "_label_outer_xaxis", None)
         if label_outer_xaxis is not None and hasattr(self, "_subplotspec"):
