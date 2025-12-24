@@ -3026,6 +3026,15 @@ class Figure(FigureBase):
         # add version information to the state
         state['__mpl_version__'] = mpl.__version__
 
+        # Ensure DPI stored in pickle is the unscaled, original DPI.
+        # When a HiDPI backend (e.g., macOSX) sets a device pixel ratio, the
+        # runtime Figure.dpi is scaled from the original value. If we persisted
+        # the scaled dpi here, unpickling and recreating the canvas would set
+        # _original_dpi from an already-scaled value and the backend would
+        # scale it again, effectively doubling the dpi on each cycle.
+        # Persisting the original dpi avoids cumulative scaling.
+        state["_dpi"] = getattr(self, "_original_dpi", self._dpi)
+
         # check whether the figure manager (if any) is registered with pyplot
         from matplotlib import _pylab_helpers
         if self.canvas.manager in _pylab_helpers.Gcf.figs.values():
