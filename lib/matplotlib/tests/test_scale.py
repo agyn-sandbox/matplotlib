@@ -133,6 +133,28 @@ def test_logscale_transform_repr():
     s = repr(Log10Transform(nonpos='clip'))
 
 
+def test_logscale_reversed_limits_invert():
+    y = np.geomspace(1, 1e5, 100)
+    fig, ax = plt.subplots()
+    ax.set_yscale('log')
+    ax.set_ylim(y.max(), y.min())
+    assert ax.yaxis_inverted()
+    assert_allclose(ax.get_ylim(), (y.max(), y.min()))
+
+    x = np.geomspace(1, 1e5, 100)
+    fig, ax = plt.subplots()
+    ax.set_xscale('log')
+    ax.set_xlim(x.max(), x.min())
+    assert ax.xaxis_inverted()
+    assert_allclose(ax.get_xlim(), (x.max(), x.min()))
+
+    fig, ax = plt.subplots()
+    ax.set_yscale('log')
+    locator = ax.yaxis.get_major_locator()
+    ax.dataLim._minpos[1] = 100
+    assert_allclose(locator.nonsingular(10, -1), (100, 10))
+
+
 @image_comparison(baseline_images=['logscale_nonpos_values'], remove_text=True,
                   extensions=['png'], tol=0.02, style='mpl20')
 def test_logscale_nonpos_values():
