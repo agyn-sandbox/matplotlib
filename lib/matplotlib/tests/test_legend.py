@@ -35,6 +35,18 @@ def test_legend_ordereddict():
               loc='center left', bbox_to_anchor=(1, .5))
 
 
+def test_subfigure_legend_creation():
+    fig = plt.figure()
+    subfig = fig.subfigures(1, 1)
+    ax = subfig.add_subplot()
+    ax.plot([0, 1], [0, 1], label='line')
+
+    legend = subfig.legend()
+
+    assert isinstance(legend, mlegend.Legend)
+    assert len(subfig.legends) == 1
+
+
 @image_comparison(['legend_auto1'], remove_text=True)
 def test_legend_auto1():
     """Test automatic legend placement"""

@@ -506,7 +506,7 @@ def test_warn_cl_plus_tl():
     with pytest.warns(UserWarning):
         # this should warn,
         fig.subplots_adjust(top=0.8)
-    assert not(fig.get_constrained_layout())
+    assert not fig.get_constrained_layout()
 
 
 @check_figures_equal(extensions=["png", "pdf"])
@@ -571,6 +571,27 @@ def test_tightbbox():
     # test bbox_extra_artists method...
     assert abs(ax.get_tightbbox(renderer, bbox_extra_artists=[]).x1
                - x1Nom * fig.dpi) < 2
+
+
+def test_bboxtight_includes_subfigure_legend():
+    fig = plt.figure()
+    subfig = fig.subfigures(1, 1)
+    ax = subfig.add_subplot()
+    ax.plot([0, 1], [0, 1], label='line')
+
+    legend = subfig.legend(loc='upper right')
+
+    fig.canvas.draw()
+    renderer = fig.canvas.get_renderer()
+
+    legend_bbox = legend.get_tightbbox(renderer)
+    fig_bbox = fig.get_tightbbox(renderer)
+    fig_bbox_display = fig_bbox.transformed(fig.dpi_scale_trans)
+
+    tol = 1e-3
+    for x, y in legend_bbox.corners():
+        assert fig_bbox_display.x0 - tol <= x <= fig_bbox_display.x1 + tol
+        assert fig_bbox_display.y0 - tol <= y <= fig_bbox_display.y1 + tol
 
 
 def test_axes_removal():

@@ -1582,8 +1582,14 @@ default: %(va)s
         return projection_class, kwargs
 
     def get_default_bbox_extra_artists(self):
-        bbox_artists = [artist for artist in self.get_children()
-                        if (artist.get_visible() and artist.get_in_layout())]
+        bbox_artists = []
+        for artist in self.get_children():
+            if not (artist.get_visible() and artist.get_in_layout()):
+                continue
+            if isinstance(artist, SubFigure):
+                bbox_artists.extend(artist.get_default_bbox_extra_artists())
+            else:
+                bbox_artists.append(artist)
         for ax in self.axes:
             if ax.get_visible():
                 bbox_artists.extend(ax.get_default_bbox_extra_artists())
