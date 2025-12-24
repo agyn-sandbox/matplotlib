@@ -237,3 +237,27 @@ def test_dynamic_norm():
 def test_vertexselector():
     line, = plt.plot([0, 1], picker=True)
     pickle.loads(pickle.dumps(VertexSelector(line)))
+
+
+def test_hidpi_pickle_unpickle_does_not_double_dpi():
+    # Emulate a HiDPI backend by setting device pixel ratio to 2. Verify that
+    # pickling and unpickling the figure does not cause the dpi to double on
+    # subsequent device pixel ratio application.
+    fig = plt.figure(dpi=100)
+    # Emulate HiDPI scaling applied by backend.
+    fig.canvas._set_device_pixel_ratio(2)
+    assert fig.dpi == 200
+
+    # First unpickle cycle should not change effective dpi when DPR=2 is
+    # applied again by the backend.
+    pf = pickle.dumps(fig, pickle.HIGHEST_PROTOCOL)
+    fig2 = pickle.loads(pf)
+    # Emulate backend reapplying DPR on new canvas.
+    fig2.canvas._set_device_pixel_ratio(2)
+    assert fig2.dpi == 200
+
+    # Repeated cycles should remain stable.
+    pf2 = pickle.dumps(fig2, pickle.HIGHEST_PROTOCOL)
+    fig3 = pickle.loads(pf2)
+    fig3.canvas._set_device_pixel_ratio(2)
+    assert fig3.dpi == 200
