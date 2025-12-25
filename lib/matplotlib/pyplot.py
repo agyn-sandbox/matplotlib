@@ -2278,13 +2278,16 @@ def set_cmap(cmap: Colormap | str) -> None:
     matplotlib.cm.register_cmap
     matplotlib.cm.get_cmap
     """
-    cmap = get_cmap(cmap)
+    cmap_obj = get_cmap(cmap)
 
-    rc('image', cmap=cmap.name)
+    if isinstance(cmap, str):
+        rc('image', cmap=cmap)
+    else:
+        rc('image', cmap=cmap_obj.name)
     im = gci()
 
     if im is not None:
-        im.set_cmap(cmap)
+        im.set_cmap(cmap_obj)
 
 
 @_copy_docstring_and_deprecators(matplotlib.image.imread)
