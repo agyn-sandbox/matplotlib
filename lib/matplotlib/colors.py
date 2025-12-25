@@ -725,6 +725,10 @@ class Colormap:
                 # Avoid converting large positive values to negative integers.
                 np.clip(xa, -1, self.N, out=xa)
                 xa = xa.astype(int)
+        if np.issubdtype(xa.dtype, np.integer):
+            required = np.min_scalar_type(self.N + 2)
+            if not np.can_cast(required, xa.dtype, casting="safe"):
+                xa = xa.astype(np.int64, copy=False)
         # Set the over-range indices before the under-range;
         # otherwise the under-range values get converted to over-range.
         xa[xa > self.N - 1] = self._i_over
