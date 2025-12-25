@@ -2249,13 +2249,16 @@ class XAxis(Axis):
         )
         self.label_position = 'bottom'
 
+        labelcolor = mpl.rcParams['xtick.labelcolor']
+        offset_color = (labelcolor if labelcolor != 'inherit'
+                        else mpl.rcParams['xtick.color'])
         self.offsetText.set(
             x=1, y=0,
             verticalalignment='top', horizontalalignment='right',
             transform=mtransforms.blended_transform_factory(
                 self.axes.transAxes, mtransforms.IdentityTransform()),
             fontsize=mpl.rcParams['xtick.labelsize'],
-            color=mpl.rcParams['xtick.color'],
+            color=offset_color,
         )
         self.offset_text_position = 'bottom'
 
@@ -2509,13 +2512,16 @@ class YAxis(Axis):
         )
         self.label_position = 'left'
         # x in axes coords, y in display coords(!).
+        labelcolor = mpl.rcParams['ytick.labelcolor']
+        offset_color = (labelcolor if labelcolor != 'inherit'
+                        else mpl.rcParams['ytick.color'])
         self.offsetText.set(
             x=0, y=0.5,
             verticalalignment='baseline', horizontalalignment='left',
             transform=mtransforms.blended_transform_factory(
                 self.axes.transAxes, mtransforms.IdentityTransform()),
             fontsize=mpl.rcParams['ytick.labelsize'],
-            color=mpl.rcParams['ytick.color'],
+            color=offset_color,
         )
         self.offset_text_position = 'left'
 
