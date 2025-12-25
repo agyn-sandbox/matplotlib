@@ -36,6 +36,16 @@ from matplotlib.axes._base import (
 from matplotlib.axes._secondary_axes import SecondaryAxis
 from matplotlib.container import BarContainer, ErrorbarContainer, StemContainer
 
+
+
+class _HistPathPatch(mpatches.PathPatch):
+    """PathPatch variant exposing Polygon-like helpers used by hist tests."""
+
+    def get_xy(self):
+        return self.get_path().vertices
+
+
+
 _log = logging.getLogger(__name__)
 
 
@@ -6870,28 +6880,42 @@ such objects
                     xvals.append(x.copy())
                     yvals.append(y.copy())
 
-            # stepfill is closed, step is not
             split = -1 if fill else 2 * len(bins)
-            # add patches in reverse order so that when stacking,
-            # items lower in the stack are plotted on top of
-            # items higher in the stack
-            for x, y, c in reversed(list(zip(xvals, yvals, color))):
-                patches.append(self.fill(
-                    x[:split], y[:split],
-                    closed=True if fill else None,
-                    facecolor=c,
-                    edgecolor=None if fill else c,
-                    fill=fill if fill else None,
-                    zorder=None if fill else mlines.Line2D.zorder))
-            for patch_list in patches:
-                for patch in patch_list:
-                    if orientation == 'vertical':
-                        patch.sticky_edges.y.append(0)
-                    elif orientation == 'horizontal':
-                        patch.sticky_edges.x.append(0)
+            path_patches = []
+            for x_vals, y_vals, c in reversed(list(zip(xvals, yvals, color))):
+                xs = x_vals[:split]
+                ys = y_vals[:split]
+                vertices = np.column_stack([xs, ys])
+                codes = np.full(len(vertices), mpath.Path.LINETO,
+                                dtype=mpath.Path.code_type)
+                codes[0] = mpath.Path.MOVETO
+                if fill:
+                    vertices = np.vstack([vertices, vertices[:1]])
+                    codes = np.append(codes, mpath.Path.CLOSEPOLY)
+                path = mpath.Path(vertices, codes)
+                path.should_simplify = False
+                if fill:
+                    facecolor = c
+                    edgecolor = None
+                else:
+                    facecolor = c
+                    edgecolor = c
+                patch = _HistPathPatch(
+                    path,
+                    facecolor=facecolor,
+                    edgecolor=edgecolor,
+                    fill=fill,
+                    zorder=None if fill else mlines.Line2D.zorder,
+                )
+                self.add_patch(patch)
+                if orientation == 'vertical':
+                    patch.sticky_edges.y.append(0)
+                else:  # orientation == 'horizontal'
+                    patch.sticky_edges.x.append(0)
+                path_patches.append([patch])
 
-            # we return patches, so put it back in the expected order
-            patches.reverse()
+            patches = list(reversed(path_patches))
+            self._request_autoscale_view()
 
         # If None, make all labels None (via zip_longest below); otherwise,
         # cast each element to str, but keep a single str as it.
