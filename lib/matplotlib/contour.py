@@ -1013,6 +1013,30 @@ class ContourSet(ContourLabeler, mcoll.Collection):
         if hasattr(self, "_old_style_split_collections"):
             del self._old_style_split_collections
 
+        bbox = self.get_datalim(self.axes.transData)
+        points = bbox.get_points() if bbox is not None else None
+        if points is not None and np.isfinite(points).all():
+            self._mins, self._maxs = points[0], points[1]
+            self.sticky_edges.x[:] = [self._mins[0], self._maxs[0]]
+            self.sticky_edges.y[:] = [self._mins[1], self._maxs[1]]
+            self.axes.update_datalim(points)
+        else:
+            finite_vertices = []
+            for path in self._paths:
+                if path.vertices.size:
+                    verts = path.vertices
+                    mask = np.isfinite(verts).all(axis=1)
+                    verts = verts[mask]
+                    if verts.size:
+                        finite_vertices.append(verts)
+            if finite_vertices:
+                stacked = np.vstack(finite_vertices)
+                self._mins = stacked.min(axis=0)
+                self._maxs = stacked.max(axis=0)
+                self.sticky_edges.x[:] = [self._mins[0], self._maxs[0]]
+                self.sticky_edges.y[:] = [self._mins[1], self._maxs[1]]
+                self.axes.update_datalim([self._mins, self._maxs])
+
         self.stale = True
 
     def get_transform(self):

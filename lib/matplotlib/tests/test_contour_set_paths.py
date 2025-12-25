@@ -53,10 +53,11 @@ def test_set_paths_allows_transformed_labeling():
         else:
             pytest.skip("Contour generator returned no paths")
 
-        dx, dy = 2.0, -1.0
+        dx, dy = 2.0, 1.5
         transform = Affine2D().translate(dx, dy)
         transformed_paths = [transform.transform_path(path) for path in original_paths]
 
+        before_datalim = cs.axes.dataLim.get_points().copy()
         cs.set_paths(transformed_paths)
         labels = cs.clabel(cs.levels)
 
@@ -77,6 +78,13 @@ def test_set_paths_allows_transformed_labeling():
             x_pos, y_pos = label.get_position()
             assert min_x <= x_pos <= max_x
             assert min_y <= y_pos <= max_y
+
+        after_datalim = cs.axes.dataLim.get_points()
+        assert not np.allclose(after_datalim, before_datalim)
+        np.testing.assert_allclose(
+            after_datalim[1],
+            [original_vertices[:, 0].max() + dx, original_vertices[:, 1].max() + dy],
+        )
     finally:
         plt.close(fig)
 
