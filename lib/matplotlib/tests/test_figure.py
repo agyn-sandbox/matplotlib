@@ -302,6 +302,60 @@ def test_suptitle_subfigures():
     assert sf2.get_facecolor() == (1.0, 1.0, 1.0, 1.0)
 
 
+def test_subfigures_wspace_spacing():
+    fig = plt.figure()
+    try:
+        left, right = fig.subfigures(1, 2, wspace=0.2)
+
+        expected_gap = 0.2 / (2 + 0.2 * (2 - 1))
+        gap = right.bbox_relative.x0 - left.bbox_relative.x1
+
+        assert gap == pytest.approx(expected_gap)
+        assert left.bbox_relative.width == pytest.approx(right.bbox_relative.width)
+    finally:
+        plt.close(fig)
+
+
+def test_subfigures_hspace_spacing():
+    fig = plt.figure()
+    try:
+        top, bottom = fig.subfigures(2, 1, hspace=0.3)
+
+        expected_gap = 0.3 / (2 + 0.3 * (2 - 1))
+        gap = top.bbox_relative.y0 - bottom.bbox_relative.y1
+
+        assert gap == pytest.approx(expected_gap)
+        assert top.bbox_relative.height == pytest.approx(bottom.bbox_relative.height)
+    finally:
+        plt.close(fig)
+
+
+def test_subfigures_default_spacing_none():
+    fig = plt.figure()
+    try:
+        left, right = fig.subfigures(1, 2)
+
+        gap = right.bbox_relative.x0 - left.bbox_relative.x1
+
+        assert gap == pytest.approx(0.0)
+    finally:
+        plt.close(fig)
+
+
+def test_nested_subfigures_inherit_spacing():
+    fig = plt.figure()
+    try:
+        left, _ = fig.subfigures(1, 2, wspace=0.1)
+        top, bottom = left.subfigures(2, 1, hspace=0.25)
+
+        expected_gap = 0.25 / (2 + 0.25 * (2 - 1))
+        gap = top.bbox_relative.y0 - bottom.bbox_relative.y1
+
+        assert gap == pytest.approx(expected_gap)
+    finally:
+        plt.close(fig)
+
+
 def test_get_suptitle_supxlabel_supylabel():
     fig, ax = plt.subplots()
     assert fig.get_suptitle() == ""

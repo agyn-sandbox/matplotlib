@@ -2274,17 +2274,30 @@ class SubFigure(FigureBase):
             return
         # need to figure out *where* this subplotspec is.
         gs = self._subplotspec.get_gridspec()
-        wr = np.asarray(gs.get_width_ratios())
-        hr = np.asarray(gs.get_height_ratios())
-        dx = wr[self._subplotspec.colspan].sum() / wr.sum()
-        dy = hr[self._subplotspec.rowspan].sum() / hr.sum()
-        x0 = wr[:self._subplotspec.colspan.start].sum() / wr.sum()
-        y0 = 1 - hr[:self._subplotspec.rowspan.stop].sum() / hr.sum()
+        wspace = gs.wspace if gs.wspace is not None else 0.0
+        hspace = gs.hspace if gs.hspace is not None else 0.0
+
+        subplotpars = SubplotParams(
+            left=0, right=1, bottom=0, top=1, wspace=wspace, hspace=hspace)
+        dummy_fig = type("_SubplotParamFig", (), {})()
+        dummy_fig.subplotpars = subplotpars
+
+        fig_bottoms, fig_tops, fig_lefts, fig_rights = gs.get_grid_positions(
+            dummy_fig)
+
+        col_span = self._subplotspec.colspan
+        row_span = self._subplotspec.rowspan
+
+        x0 = fig_lefts[col_span.start]
+        x1 = fig_rights[col_span.stop - 1]
+        y0 = fig_bottoms[row_span.stop - 1]
+        y1 = fig_tops[row_span.start]
+
         if self.bbox_relative is None:
-            self.bbox_relative = Bbox.from_bounds(x0, y0, dx, dy)
+            self.bbox_relative = Bbox.from_extents(x0, y0, x1, y1)
         else:
             self.bbox_relative.p0 = (x0, y0)
-            self.bbox_relative.p1 = (x0 + dx, y0 + dy)
+            self.bbox_relative.p1 = (x1, y1)
 
     def get_constrained_layout(self):
         """
