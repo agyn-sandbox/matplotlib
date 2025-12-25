@@ -1,16 +1,22 @@
 """
 Tests specific to the patches module.
 """
+import io
+import re
+
 import numpy as np
 from numpy.testing import assert_almost_equal, assert_array_equal
 import pytest
 
 import matplotlib as mpl
+from matplotlib.backends.backend_agg import RendererAgg
+from matplotlib.backends.backend_svg import FigureCanvasSVG
 from matplotlib.patches import (Annulus, Ellipse, Patch, Polygon, Rectangle,
                                 FancyArrowPatch, FancyArrow, BoxStyle)
 from matplotlib.testing.decorators import image_comparison, check_figures_equal
 from matplotlib.transforms import Bbox
 import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
 from matplotlib import (
     collections as mcollections, colors as mcolors, patches as mpatches,
     path as mpath, transforms as mtransforms, rcParams)
@@ -335,6 +341,59 @@ def test_patch_linestyle_none(fig_test, fig_ref):
     ax_test.set_ylim([-1, i + 1])
     ax_ref.set_xlim([-1, i + 1])
     ax_ref.set_ylim([-1, i + 1])
+
+
+def test_patch_linestyle_respects_dashoffset_svg():
+    fig = Figure(figsize=(2, 1))
+    ax = fig.add_subplot()
+    ax.set_axis_off()
+    ax.set_xlim(0, 3)
+    ax.set_ylim(0, 1)
+
+    rect_no_offset = Rectangle(
+        (0.1, 0.1), 1, 0.8, fill=False, linewidth=2,
+        linestyle=(0, (3, 2)))
+    rect_with_offset = Rectangle(
+        (1.5, 0.1), 1, 0.8, fill=False, linewidth=2,
+        linestyle=(6, (3, 2)))
+
+    ax.add_patch(rect_no_offset)
+    ax.add_patch(rect_with_offset)
+
+    canvas = FigureCanvasSVG(fig)
+    buffer = io.StringIO()
+    canvas.print_svg(buffer)
+    svg = buffer.getvalue()
+
+    offsets = [
+        float(match)
+        for match in re.findall(r"stroke-dashoffset:\s*([0-9.]+)", svg)
+    ]
+
+    assert len(offsets) >= 2
+    assert rect_no_offset._dash_pattern[0] == 0
+    assert offsets.count(rect_no_offset._dash_pattern[0]) >= 1
+    assert offsets.count(rect_with_offset._dash_pattern[0]) >= 1
+
+
+def test_patch_linestyle_dashoffset_prop_agg(monkeypatch):
+    renderer = RendererAgg(200, 200, 72)
+    rect = Rectangle(
+        (0, 0), 1, 1, fill=False, linewidth=2,
+        linestyle=(6, (3, 2)))
+
+    recorded = []
+    original_draw_path = RendererAgg.draw_path
+
+    def capture(self, gc, path, transform, rgbFace=None):
+        recorded.append(gc.get_dashes())
+        return original_draw_path(self, gc, path, transform, rgbFace)
+
+    monkeypatch.setattr(RendererAgg, "draw_path", capture)
+    rect.draw(renderer)
+
+    assert recorded
+    assert rect._dash_pattern in recorded
 
 
 def test_wedge_movement():

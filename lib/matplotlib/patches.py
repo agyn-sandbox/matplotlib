@@ -414,6 +414,8 @@ class Patch(artist.Artist):
             (offset, onoffseq)
 
         where ``onoffseq`` is an even length tuple of on and off ink in points.
+        When ``rcParams['lines.scale_dashes']`` is True (the default), both the
+        offset and the on/off lengths are scaled by the linewidth.
 
         Parameters
         ----------
@@ -586,10 +588,8 @@ class Patch(artist.Artist):
         # docstring inherited
         if not self.get_visible():
             return
-        # Patch has traditionally ignored the dashoffset.
-        with cbook._setattr_cm(
-                 self, _dash_pattern=(0, self._dash_pattern[1])), \
-             self._bind_draw_path_function(renderer) as draw_path:
+        # Preserve the computed dash offset via the bound draw_path.
+        with self._bind_draw_path_function(renderer) as draw_path:
             path = self.get_path()
             transform = self.get_transform()
             tpath = transform.transform_path_non_affine(path)
