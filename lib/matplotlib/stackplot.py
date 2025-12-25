@@ -6,11 +6,17 @@ https://stackoverflow.com/q/2225995/
 (https://stackoverflow.com/users/66549/doug)
 """
 
+import itertools
+import re
+
 import numpy as np
 
-from matplotlib import _api
+from matplotlib import _api, colors as mcolors
 
 __all__ = ['stackplot']
+
+_CN_ALIAS_RE = re.compile(r'C\d+')
+_SINGLE_LETTER_COLOR_CHARS = frozenset('bgrcmykwBGRCMYKW')
 
 
 def stackplot(axes, x, *args,
@@ -69,8 +75,33 @@ def stackplot(axes, x, *args,
     y = np.row_stack(args)
 
     labels = iter(labels)
+    color_iter = None
     if colors is not None:
-        axes.set_prop_cycle(color=colors)
+        if isinstance(colors, str):
+            color_str = colors.strip()
+            if _CN_ALIAS_RE.fullmatch(color_str):
+                parsed_colors = [color_str]
+            elif ',' in color_str:
+                parsed_colors = [part.strip() for part in color_str.split(',')
+                                 if part.strip()]
+            elif (color_str and set(color_str)
+                  <= _SINGLE_LETTER_COLOR_CHARS):
+                parsed_colors = list(color_str)
+            else:
+                parsed_colors = [color_str]
+        else:
+            try:
+                iter(colors)
+            except TypeError:
+                parsed_colors = [colors]
+            else:
+                if isinstance(colors, (set, frozenset)):
+                    parsed_colors = [colors]
+                else:
+                    parsed_colors = list(colors)
+        rgba_list = mcolors.to_rgba_array(parsed_colors)
+        if len(rgba_list):
+            color_iter = itertools.cycle(rgba_list)
 
     # Assume data passed has not been 'stacked', so stack it here.
     # We'll need a float buffer for the upcoming calculations.
@@ -108,7 +139,9 @@ def stackplot(axes, x, *args,
         stack += first_line
 
     # Color between x = 0 and the first array.
-    color = axes._get_lines.get_next_color()
+    color = (next(color_iter)
+             if color_iter is not None
+             else axes._get_lines.get_next_color())
     coll = axes.fill_between(x, first_line, stack[0, :],
                              facecolor=color, label=next(labels, None),
                              **kwargs)
@@ -117,7 +150,9 @@ def stackplot(axes, x, *args,
 
     # Color between array i-1 and array i
     for i in range(len(y) - 1):
-        color = axes._get_lines.get_next_color()
+        color = (next(color_iter)
+                 if color_iter is not None
+                 else axes._get_lines.get_next_color())
         r.append(axes.fill_between(x, stack[i, :], stack[i + 1, :],
                                    facecolor=color, label=next(labels, None),
                                    **kwargs))
