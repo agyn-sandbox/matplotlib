@@ -4,6 +4,7 @@ Classes to support contour plotting and labelling for the Axes class.
 
 import functools
 import math
+from collections.abc import Sequence
 from numbers import Integral
 
 import numpy as np
@@ -976,6 +977,67 @@ class ContourSet(ContourLabeler, mcoll.Collection):
             for col in self._old_style_split_collections:
                 self.axes.add_collection(col)
         return self._old_style_split_collections
+
+    def set_paths(self, paths):
+        """
+        Replace the paths used to render this ContourSet.
+
+        Parameters
+        ----------
+        paths : Sequence of `.Path`
+            New paths in the coordinate system of :meth:`get_transform`.
+
+        Raises
+        ------
+        TypeError
+            If *paths* is not a sequence of `.Path`.
+        ValueError
+            If the number of provided paths does not match the existing
+            contour paths.
+        """
+        _api.check_isinstance(Sequence, paths=paths)
+
+        new_paths = list(paths)
+        for path in new_paths:
+            _api.check_isinstance(Path, path=path)
+
+        if self._paths is not None:
+            expected = len(self._paths)
+            if len(new_paths) != expected:
+                raise ValueError(
+                    f"'paths' must contain {expected} items, got {len(new_paths)}"
+                )
+
+        self._paths = new_paths
+
+        if hasattr(self, "_old_style_split_collections"):
+            del self._old_style_split_collections
+
+        bbox = self.get_datalim(self.axes.transData)
+        points = bbox.get_points() if bbox is not None else None
+        if points is not None and np.isfinite(points).all():
+            self._mins, self._maxs = points[0], points[1]
+            self.sticky_edges.x[:] = [self._mins[0], self._maxs[0]]
+            self.sticky_edges.y[:] = [self._mins[1], self._maxs[1]]
+            self.axes.update_datalim(points)
+        else:
+            finite_vertices = []
+            for path in self._paths:
+                if path.vertices.size:
+                    verts = path.vertices
+                    mask = np.isfinite(verts).all(axis=1)
+                    verts = verts[mask]
+                    if verts.size:
+                        finite_vertices.append(verts)
+            if finite_vertices:
+                stacked = np.vstack(finite_vertices)
+                self._mins = stacked.min(axis=0)
+                self._maxs = stacked.max(axis=0)
+                self.sticky_edges.x[:] = [self._mins[0], self._maxs[0]]
+                self.sticky_edges.y[:] = [self._mins[1], self._maxs[1]]
+                self.axes.update_datalim([self._mins, self._maxs])
+
+        self.stale = True
 
     def get_transform(self):
         """Return the `.Transform` instance used by this ContourSet."""
