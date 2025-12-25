@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 import matplotlib.transforms as mtransforms
 from matplotlib.testing.decorators import check_figures_equal, image_comparison
 from matplotlib.testing._markers import needs_usetex
-from matplotlib.text import Text, Annotation
+from matplotlib.text import Text, Annotation, OffsetFrom
 
 pyparsing_version = parse_version(pyparsing.__version__)
 
@@ -674,6 +674,83 @@ def test_annotation_units(fig_test, fig_ref):
     ax = fig_ref.add_subplot()
     ax.plot(datetime.now(), 1, "o")
     ax.annotate("x", (datetime.now(), 0.5), xycoords=("data", "axes fraction"))
+
+
+def test_annotation_xy_numpy_source_mutation_no_effect():
+    fig, ax = plt.subplots()
+    xy = np.array([0.25, 0.75], dtype=float)
+    ann = ax.annotate("point", xy=xy)
+
+    def current_xy_pixels():
+        fig.canvas.draw()
+        renderer = fig.canvas.get_renderer()
+        return ann._get_position_xy(renderer)
+
+    original_pixels = current_xy_pixels()
+    xy[:] = [0.5, 0.5]
+    mutated_pixels = current_xy_pixels()
+
+    np.testing.assert_allclose(mutated_pixels, original_pixels)
+    assert ann.xy == (0.25, 0.75)
+
+
+def test_annotation_xytext_numpy_source_mutation_no_effect():
+    fig, ax = plt.subplots()
+    xytext = np.array([12.0, -6.0], dtype=float)
+    ann = ax.annotate(
+        "label",
+        xy=(0.4, 0.6),
+        xytext=xytext,
+        textcoords="offset points",
+    )
+
+    def current_text_position():
+        fig.canvas.draw()
+        return ann.get_position()
+
+    original_xytext = current_text_position()
+    xytext[:] = [18.0, -12.0]
+    mutated_xytext = current_text_position()
+
+    assert mutated_xytext == original_xytext
+    assert original_xytext == ann.get_position()
+
+
+def test_annotation_xy_list_source_mutation_no_effect():
+    fig, ax = plt.subplots()
+    xy = [0.1, 0.3]
+    ann = ax.annotate("list", xy=xy)
+
+    def current_xy_pixels():
+        fig.canvas.draw()
+        renderer = fig.canvas.get_renderer()
+        return ann._get_position_xy(renderer)
+
+    original_pixels = current_xy_pixels()
+    xy[0] = 0.9
+    xy[1] = 0.9
+    mutated_pixels = current_xy_pixels()
+
+    np.testing.assert_allclose(mutated_pixels, original_pixels)
+    assert ann.xy == (0.1, 0.3)
+
+
+def test_offsetfrom_ref_coord_numpy_mutation_no_effect():
+    fig, ax = plt.subplots()
+    ref_coord = np.array([0.25, 0.5], dtype=float)
+    offset = OffsetFrom(ax, ref_coord, unit="points")
+
+    fig.canvas.draw()
+    renderer = fig.canvas.get_renderer()
+    original_offset = offset(renderer).transform((0, 0))
+
+    ref_coord[:] = [0.75, 0.2]
+    fig.canvas.draw()
+    renderer = fig.canvas.get_renderer()
+    updated_offset = offset(renderer).transform((0, 0))
+
+    np.testing.assert_allclose(updated_offset, original_offset)
+    assert offset._ref_coord == (0.25, 0.5)
 
 
 @image_comparison(['large_subscript_title.png'], style='mpl20')
