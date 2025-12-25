@@ -37,15 +37,6 @@ from matplotlib.axes._secondary_axes import SecondaryAxis
 from matplotlib.container import BarContainer, ErrorbarContainer, StemContainer
 
 
-
-class _HistPathPatch(mpatches.PathPatch):
-    """PathPatch variant exposing Polygon-like helpers used by hist tests."""
-
-    def get_xy(self):
-        return self.get_path().vertices
-
-
-
 _log = logging.getLogger(__name__)
 
 
@@ -6881,40 +6872,35 @@ such objects
                     yvals.append(y.copy())
 
             split = -1 if fill else 2 * len(bins)
-            path_patches = []
+            fill_kwarg = kwargs.get('fill', None)
+            if fill_kwarg is None:
+                fill_requested = False
+            elif (np.iterable(fill_kwarg)
+                  and not isinstance(fill_kwarg, (str, bytes))):
+                fill_requested = any(fill_kwarg)
+            else:
+                fill_requested = bool(fill_kwarg)
+            polygon_lists = []
             for x_vals, y_vals, c in reversed(list(zip(xvals, yvals, color))):
-                xs = x_vals[:split]
-                ys = y_vals[:split]
-                vertices = np.column_stack([xs, ys])
-                codes = np.full(len(vertices), mpath.Path.LINETO,
-                                dtype=mpath.Path.code_type)
-                codes[0] = mpath.Path.MOVETO
-                if fill:
-                    vertices = np.vstack([vertices, vertices[:1]])
-                    codes = np.append(codes, mpath.Path.CLOSEPOLY)
-                path = mpath.Path(vertices, codes)
-                path.should_simplify = False
-                if fill:
-                    facecolor = c
-                    edgecolor = None
-                else:
-                    facecolor = c
-                    edgecolor = c
-                patch = _HistPathPatch(
-                    path,
-                    facecolor=facecolor,
-                    edgecolor=edgecolor,
+                vertices = np.column_stack([x_vals[:split], y_vals[:split]])
+                facecolor = c if fill or fill_requested else 'none'
+                poly = mpatches.Polygon(
+                    vertices,
+                    closed=fill,
                     fill=fill,
+                    edgecolor=None if fill else c,
+                    facecolor=facecolor,
                     zorder=None if fill else mlines.Line2D.zorder,
                 )
-                self.add_patch(patch)
+                poly.get_path().should_simplify = False
+                self.add_patch(poly)
                 if orientation == 'vertical':
-                    patch.sticky_edges.y.append(0)
+                    poly.sticky_edges.y.append(0)
                 else:  # orientation == 'horizontal'
-                    patch.sticky_edges.x.append(0)
-                path_patches.append([patch])
+                    poly.sticky_edges.x.append(0)
+                polygon_lists.append([poly])
 
-            patches = list(reversed(path_patches))
+            patches = list(reversed(polygon_lists))
             self._request_autoscale_view()
 
         # If None, make all labels None (via zip_longest below); otherwise,
