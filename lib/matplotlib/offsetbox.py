@@ -1500,18 +1500,29 @@ class DraggableBase:
     coordinate and set a relevant attribute.
     """
 
+    canvas = property(lambda self: self.ref_artist.figure.canvas)
+
     def __init__(self, ref_artist, use_blit=False):
         self.ref_artist = ref_artist
         if not ref_artist.pickable():
             ref_artist.set_picker(True)
         self.got_artist = False
-        self.canvas = self.ref_artist.figure.canvas
-        self._use_blit = use_blit and self.canvas.supports_blit
-        self.cids = [
-            self.canvas.callbacks._connect_picklable(
-                'pick_event', self.on_pick),
-            self.canvas.callbacks._connect_picklable(
-                'button_release_event', self.on_release),
+        figure = self.ref_artist.figure
+        canvas = figure.canvas
+        self._use_blit = use_blit and canvas.supports_blit
+        callbacks = figure._canvas_callbacks
+        self._disconnectors = [
+            functools.partial(
+                callbacks.disconnect,
+                callbacks._connect_picklable('pick_event', self.on_pick)),
+            functools.partial(
+                callbacks.disconnect,
+                callbacks._connect_picklable(
+                    'button_release_event', self.on_release)),
+            functools.partial(
+                callbacks.disconnect,
+                callbacks._connect_picklable(
+                    'motion_notify_event', self.on_motion)),
         ]
 
     def on_motion(self, evt):
@@ -1540,15 +1551,12 @@ class DraggableBase:
                 self.ref_artist.draw(
                     self.ref_artist.figure._get_renderer())
                 self.canvas.blit()
-            self._c1 = self.canvas.callbacks._connect_picklable(
-                "motion_notify_event", self.on_motion)
             self.save_offset()
 
     def on_release(self, event):
         if self._check_still_parented() and self.got_artist:
             self.finalize_offset()
             self.got_artist = False
-            self.canvas.mpl_disconnect(self._c1)
 
             if self._use_blit:
                 self.ref_artist.set_animated(False)
@@ -1562,14 +1570,8 @@ class DraggableBase:
 
     def disconnect(self):
         """Disconnect the callbacks."""
-        for cid in self.cids:
-            self.canvas.mpl_disconnect(cid)
-        try:
-            c1 = self._c1
-        except AttributeError:
-            pass
-        else:
-            self.canvas.mpl_disconnect(c1)
+        for disconnect in self._disconnectors:
+            disconnect()
 
     def save_offset(self):
         pass
