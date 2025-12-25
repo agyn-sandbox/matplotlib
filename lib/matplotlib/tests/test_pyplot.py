@@ -9,6 +9,7 @@ import pytest
 import matplotlib as mpl
 from matplotlib.testing import subprocess_run_for_testing
 from matplotlib import pyplot as plt
+from matplotlib.colors import LinearSegmentedColormap
 
 
 def test_pyplot_up_to_date(tmpdir):
@@ -78,6 +79,37 @@ def test_pyplot_box():
 def test_stackplot_smoke():
     # Small smoke test for stackplot (see #12405)
     plt.stackplot([1, 2, 3], [1, 2, 3])
+
+
+def test_set_cmap_uses_registered_key_for_rcparams():
+    original_cmap = mpl.rcParams['image.cmap']
+    cmap = LinearSegmentedColormap.from_list(
+        'some_cmap_name', ['black', 'white']
+    )
+    mpl.colormaps.register(cmap, name='my_cmap_name', force=True)
+    try:
+        plt.set_cmap('my_cmap_name')
+        assert mpl.rcParams['image.cmap'] == 'my_cmap_name'
+        plt.imshow(np.arange(4).reshape(2, 2))
+    finally:
+        mpl.rcParams['image.cmap'] = original_cmap
+        mpl.colormaps.unregister('my_cmap_name')
+        plt.close('all')
+
+
+def test_set_cmap_colormap_object_rcparams_name_passthrough():
+    original_cmap = mpl.rcParams['image.cmap']
+    cmap = LinearSegmentedColormap.from_list(
+        'unregistered_internal_name', ['black', 'white']
+    )
+    mpl.colormaps.register(cmap, name='alias_for_object', force=True)
+    try:
+        plt.set_cmap(cmap)
+        assert mpl.rcParams['image.cmap'] == 'unregistered_internal_name'
+    finally:
+        mpl.rcParams['image.cmap'] = original_cmap
+        mpl.colormaps.unregister('alias_for_object')
+        plt.close('all')
 
 
 def test_nrows_error():
