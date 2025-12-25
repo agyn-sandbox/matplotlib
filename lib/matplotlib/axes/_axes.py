@@ -36,6 +36,7 @@ from matplotlib.axes._base import (
 from matplotlib.axes._secondary_axes import SecondaryAxis
 from matplotlib.container import BarContainer, ErrorbarContainer, StemContainer
 
+
 _log = logging.getLogger(__name__)
 
 
@@ -6870,28 +6871,37 @@ such objects
                     xvals.append(x.copy())
                     yvals.append(y.copy())
 
-            # stepfill is closed, step is not
             split = -1 if fill else 2 * len(bins)
-            # add patches in reverse order so that when stacking,
-            # items lower in the stack are plotted on top of
-            # items higher in the stack
-            for x, y, c in reversed(list(zip(xvals, yvals, color))):
-                patches.append(self.fill(
-                    x[:split], y[:split],
-                    closed=True if fill else None,
-                    facecolor=c,
+            fill_kwarg = kwargs.get('fill', None)
+            if fill_kwarg is None:
+                fill_requested = False
+            elif (np.iterable(fill_kwarg)
+                  and not isinstance(fill_kwarg, (str, bytes))):
+                fill_requested = any(fill_kwarg)
+            else:
+                fill_requested = bool(fill_kwarg)
+            polygon_lists = []
+            for x_vals, y_vals, c in reversed(list(zip(xvals, yvals, color))):
+                vertices = np.column_stack([x_vals[:split], y_vals[:split]])
+                facecolor = c if fill or fill_requested else 'none'
+                poly = mpatches.Polygon(
+                    vertices,
+                    closed=fill,
+                    fill=fill,
                     edgecolor=None if fill else c,
-                    fill=fill if fill else None,
-                    zorder=None if fill else mlines.Line2D.zorder))
-            for patch_list in patches:
-                for patch in patch_list:
-                    if orientation == 'vertical':
-                        patch.sticky_edges.y.append(0)
-                    elif orientation == 'horizontal':
-                        patch.sticky_edges.x.append(0)
+                    facecolor=facecolor,
+                    zorder=None if fill else mlines.Line2D.zorder,
+                )
+                poly.get_path().should_simplify = False
+                self.add_patch(poly)
+                if orientation == 'vertical':
+                    poly.sticky_edges.y.append(0)
+                else:  # orientation == 'horizontal'
+                    poly.sticky_edges.x.append(0)
+                polygon_lists.append([poly])
 
-            # we return patches, so put it back in the expected order
-            patches.reverse()
+            patches = list(reversed(polygon_lists))
+            self._request_autoscale_view()
 
         # If None, make all labels None (via zip_longest below); otherwise,
         # cast each element to str, but keep a single str as it.
