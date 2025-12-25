@@ -120,6 +120,7 @@ class ContourSet(ContourLabeler, Collection):
         Literal["solid", "dashed", "dashdot", "dotted"] |
         Iterable[Literal["solid", "dashed", "dashdot", "dotted"]]
     ): ...
+    def set_paths(self, paths: Sequence[Path]) -> None: ...
 
     def __init__(
         self,
