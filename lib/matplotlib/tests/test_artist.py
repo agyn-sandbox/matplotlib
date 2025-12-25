@@ -214,6 +214,41 @@ def test_remove():
     assert ax.stale
 
 
+@pytest.mark.backend("Agg")
+def test_cla_unsets_artist_axes():
+    fig, ax = plt.subplots()
+    line, = ax.plot([0, 1], [0, 1])
+    patch = ax.add_patch(mpatches.Rectangle((0, 0), 1, 1))
+    image = ax.imshow(np.arange(4).reshape(2, 2))
+    text = ax.text(0.5, 0.5, "hi")
+    collection = ax.scatter([0], [0])
+    legend = ax.legend([line], ["line"])
+
+    ax.cla()
+
+    for artist in (line, patch, image, text, collection, legend):
+        assert artist.axes is None
+
+
+@pytest.mark.backend("Agg")
+def test_clf_unsets_figure_and_axes_parents():
+    fig, ax = plt.subplots()
+    line, = ax.plot([0, 1], [0, 1])
+    image = ax.imshow(np.arange(4).reshape(2, 2))
+    fig_text = fig.text(0.5, 0.5, "hi")
+    fig_legend = fig.legend([line], ["line"])
+    colorbar = fig.colorbar(image, ax=ax)
+
+    fig.clf()
+
+    assert fig.axes == []
+    assert line.axes is None
+    assert image.axes is None
+    assert fig_text.figure is None
+    assert fig_legend.figure is None
+    assert colorbar.ax.figure is None
+
+
 @image_comparison(["default_edges.png"], remove_text=True, style='default')
 def test_default_edges():
     # Remove this line when this test image is regenerated.
