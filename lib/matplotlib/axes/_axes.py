@@ -5013,8 +5013,9 @@ default: :rc:`scatter.edgecolors`
                     Cs_at_i2[i2[i]].append(C[i])
             if mincnt is None:
                 mincnt = 1
+            threshold = max(mincnt, 1)
             accum = np.array(
-                [reduce_C_function(acc) if len(acc) >= mincnt else np.nan
+                [reduce_C_function(acc) if len(acc) >= threshold else np.nan
                  for Cs_at_i in [Cs_at_i1, Cs_at_i2]
                  for acc in Cs_at_i[1:]],  # [1:] drops out-of-range points.
                 float)

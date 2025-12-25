@@ -1033,6 +1033,24 @@ def test_hexbin_mincnt_excludes_when_below_threshold():
     assert len(reduced.get_array()) == 0
 
 
+def test_hexbin_mincnt_zero_with_C_matches_default():
+    x = np.array([0.1, 1.6])
+    y = np.array([0.1, 1.6])
+    fig, ax = plt.subplots()
+    hb_zero = ax.hexbin(
+        x, y, C=np.ones_like(x), gridsize=(3, 3), extent=(0, 2, 0, 2),
+        mincnt=0, reduce_C_function=np.sum)
+
+    fig, ax = plt.subplots()
+    hb_default = ax.hexbin(
+        x, y, C=np.ones_like(x), gridsize=(3, 3), extent=(0, 2, 0, 2),
+        reduce_C_function=np.sum)
+
+    assert_array_equal(hb_zero.get_offsets(), hb_default.get_offsets())
+    assert_array_equal(hb_zero.get_array(), hb_default.get_array())
+    assert len(hb_zero.get_array()) == 2
+
+
 def test_inverted_limits():
     # Test gh:1553
     # Calling invert_xaxis prior to plotting should not disable autoscaling
