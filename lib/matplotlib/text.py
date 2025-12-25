@@ -93,7 +93,12 @@ def _get_text_metrics_with_cache_impl(
     "fontweight": ["weight"],
 })
 class Text(Artist):
-    """Handle storing and drawing of text in window or data coordinates."""
+    """
+    Handle storing and drawing of text in window or data coordinates.
+
+    The ``antialiased`` property controls per-artist text antialiasing via
+    :meth:`set_antialiased`.
+    """
 
     zorder = 3
     _charsize_cache = dict()
@@ -183,6 +188,7 @@ class Text(Artist):
         self._transform_rotates_text = transform_rotates_text
         self._bbox_patch = None  # a FancyBboxPatch instance
         self._renderer = None
+        self._text_antialiased = None
         if linespacing is None:
             linespacing = 1.2  # Maybe use rcParam later.
         self.set_linespacing(linespacing)
@@ -322,6 +328,7 @@ class Text(Artist):
         self._transform_rotates_text = other._transform_rotates_text
         self._picker = other._picker
         self._linespacing = other._linespacing
+        self._text_antialiased = other._text_antialiased
         self.stale = True
 
     def _get_layout(self, renderer):
@@ -739,6 +746,12 @@ class Text(Artist):
             gc.set_url(self._url)
             self._set_gc_clip(gc)
 
+            text_aa = self.get_antialiased()
+            resolved_text_aa = (
+                text_aa if text_aa is not None
+                else mpl.rcParams['text.antialiased'])
+            gc.set_text_antialiased(resolved_text_aa)
+
             angle = self.get_rotation()
 
             for line, wh, x, y in info:
@@ -769,6 +782,22 @@ class Text(Artist):
         gc.restore()
         renderer.close_group('text')
         self.stale = False
+
+    def set_antialiased(self, aa):
+        """Set whether the text should use antialiased rendering.
+
+        Parameters
+        ----------
+        aa : bool or None
+            If ``None``, defer to :rc:`text.antialiased`.
+        """
+        _api.check_isinstance((bool, type(None)), antialiased=aa)
+        self._text_antialiased = None if aa is None else bool(aa)
+        self.stale = True
+
+    def get_antialiased(self):
+        """Return the per-artist antialiasing setting."""
+        return self._text_antialiased
 
     def get_color(self):
         """Return the color of the text."""
