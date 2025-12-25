@@ -999,6 +999,40 @@ def test_hexbin_log_clim():
     assert h.get_clim() == (2, 100)
 
 
+def test_hexbin_mincnt_counts():
+    x = np.array([0.1, 1.6])
+    y = np.array([0.1, 1.6])
+    fig, ax = plt.subplots()
+    coll = ax.hexbin(
+        x, y, gridsize=(2, 2), extent=(0, 2, 0, 2), mincnt=1)
+    assert_array_equal(coll.get_array(), np.array([1.0, 1.0]))
+
+
+def test_hexbin_mincnt_with_C():
+    x = np.array([0.1, 1.6])
+    y = np.array([0.1, 1.6])
+    fig, ax = plt.subplots()
+    coll = ax.hexbin(
+        x, y, C=np.ones_like(x), gridsize=(2, 2), extent=(0, 2, 0, 2),
+        mincnt=1, reduce_C_function=np.sum)
+    assert_array_equal(coll.get_array(), np.array([1.0, 1.0]))
+
+
+def test_hexbin_mincnt_excludes_when_below_threshold():
+    x = np.array([0.1, 1.6])
+    y = np.array([0.1, 1.6])
+    fig, ax = plt.subplots()
+    counts = ax.hexbin(
+        x, y, gridsize=(2, 2), extent=(0, 2, 0, 2), mincnt=2)
+    assert len(counts.get_array()) == 0
+
+    fig, ax = plt.subplots()
+    reduced = ax.hexbin(
+        x, y, C=np.ones_like(x), gridsize=(2, 2), extent=(0, 2, 0, 2),
+        mincnt=2, reduce_C_function=np.sum)
+    assert len(reduced.get_array()) == 0
+
+
 def test_inverted_limits():
     # Test gh:1553
     # Calling invert_xaxis prior to plotting should not disable autoscaling
