@@ -8195,3 +8195,45 @@ def test_bar_leading_nan():
         for b in rest:
             assert np.isfinite(b.xy).all()
             assert np.isfinite(b.get_width())
+
+
+def test_bar_all_nan_x_and_height_no_stopiteration():
+    # Regression for Task 268 — matplotlib__matplotlib-24149.
+    fig, ax = plt.subplots()
+
+    container = ax.bar([np.nan], [np.nan])
+
+    plt.close(fig)
+
+    assert len(container) == 1
+    rect, = container
+    assert np.isnan(rect.get_x())
+    assert np.isnan(rect.get_height())
+
+
+def test_bar_nan_x_zero_height_no_stopiteration():
+    # Regression for Task 268 — matplotlib__matplotlib-24149.
+    fig, ax = plt.subplots()
+
+    container = ax.bar([np.nan], [0])
+
+    plt.close(fig)
+
+    assert len(container) == 1
+    rect, = container
+    assert np.isnan(rect.get_x())
+    assert rect.get_height() == 0
+
+
+def test_bar_zero_x_nan_height_baseline_ok():
+    # Regression for Task 268 — matplotlib__matplotlib-24149.
+    fig, ax = plt.subplots()
+
+    container = ax.bar([0], [np.nan])
+
+    plt.close(fig)
+
+    assert len(container) == 1
+    rect, = container
+    assert rect.get_x() == -0.4
+    assert np.isnan(rect.get_height())
