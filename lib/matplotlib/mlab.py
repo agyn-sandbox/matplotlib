@@ -426,8 +426,9 @@ def _spectral_helper(x, y=None, NFFT=None, Fs=None, detrend_func=None,
             # windowing loss; see Bendat & Piersol Sec 11.5.2.
             result /= (np.abs(window)**2).sum()
         else:
-            # In this case, preserve power in the segment, not amplitude
-            result /= np.abs(window).sum()**2
+            # Preserve segment power using the signed window sum, matching
+            # SciPy's welch(scale='spectrum') normalization.
+            result /= (window.sum())**2
 
     t = np.arange(NFFT/2, len(x) - NFFT/2 + 1, NFFT - noverlap)/Fs
 
