@@ -1599,6 +1599,14 @@ levels : int or array-like, optional
     If array-like, draw contour lines at the specified levels.
     The values must be in increasing order.
 
+    .. note::
+
+        If *Z* has a boolean dtype and *levels* is omitted (or ``None``),
+        `.contour` adds a single level at ``0.5`` and `.contourf` draws
+        filled regions using the levels ``[0.0, 0.5, 1.0]``. Supplying
+        explicit *levels*, configuring *locator*, or using a logarithmic
+        scale preserves the provided behaviour.
+
 Returns
 -------
 `~.contour.QuadContourSet`
