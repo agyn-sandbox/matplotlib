@@ -217,6 +217,25 @@ def test_unpickle_canvas():
     assert fig2.canvas is not None
 
 
+def test_hidpi_pickle_unpickle_does_not_double_dpi():
+    fig = plt.figure(dpi=100)
+
+    fig.canvas._set_device_pixel_ratio(2)
+    assert fig.dpi == pytest.approx(200)
+    assert getattr(fig, "_original_dpi", None) == pytest.approx(100)
+
+    buffer = BytesIO()
+    pickle.dump(fig, buffer, pickle.HIGHEST_PROTOCOL)
+    buffer.seek(0)
+
+    restored = pickle.load(buffer)
+    assert restored.dpi == pytest.approx(200)
+
+    restored.canvas._set_device_pixel_ratio(2)
+    assert restored.dpi == pytest.approx(200)
+    assert getattr(restored, "_original_dpi", None) == pytest.approx(100)
+
+
 def test_mpl_toolkits():
     ax = parasite_axes.host_axes([0, 0, 1, 1])
     assert type(pickle.loads(pickle.dumps(ax))) == parasite_axes.HostAxes
