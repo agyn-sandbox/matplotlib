@@ -588,7 +588,7 @@ class Patch(artist.Artist):
         # docstring inherited
         if not self.get_visible():
             return
-        # Patch has traditionally ignored the dashoffset.
+        # Preserve the computed dash offset via the bound draw_path.
         with self._bind_draw_path_function(renderer) as draw_path:
             path = self.get_path()
             transform = self.get_transform()
