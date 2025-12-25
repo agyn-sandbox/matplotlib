@@ -3043,6 +3043,12 @@ class Figure(FigureBase):
 
         self.__dict__ = state
 
+        # Preserve the original DPI that may differ from the figure DPI on
+        # HiDPI backends.  FigureCanvasBase will overwrite ``_original_dpi``
+        # when it reattaches the canvas, so capture it first and restore it
+        # afterwards.
+        original_dpi = getattr(self, "_original_dpi", self.dpi)
+
         # re-initialise some of the unstored state information
         FigureCanvasBase(self)  # Set self.canvas.
 
@@ -3055,6 +3061,8 @@ class Figure(FigureBase):
             mgr = plt._backend_mod.new_figure_manager_given_figure(num, self)
             pylab_helpers.Gcf._set_new_active_manager(mgr)
             plt.draw_if_interactive()
+
+        self._original_dpi = original_dpi
 
         self.stale = True
 
