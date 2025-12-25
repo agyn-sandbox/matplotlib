@@ -101,6 +101,46 @@ def test_align_labels_stray_axes():
     np.testing.assert_allclose(yn[::2], yn[1::2])
 
 
+def _serialized_alignment_groups(fig, axis):
+    axes = fig.axes
+    lookup = {id(ax): idx for idx, ax in enumerate(axes)}
+    groups = []
+    for group in fig._align_label_groups[axis]:
+        indices = [
+            lookup[id(ax)]
+            for ax in group
+            if ax is not None and id(ax) in lookup
+        ]
+        if indices:
+            groups.append(tuple(sorted(indices)))
+    return sorted(groups)
+
+
+def test_align_labels_pickle_roundtrip():
+    fig, axs = plt.subplots(2, 1)
+    axs[0].plot([0, 1])
+    axs[0].set_ylabel('speed')
+    axs[0].set_xlabel('time')
+    axs[1].plot([0, 1])
+    axs[1].set_ylabel('accel')
+    axs[1].set_xlabel('time')
+
+    fig.align_labels()
+
+    serialized = pickle.dumps(fig)
+    reloaded = pickle.loads(serialized)
+
+    original_x = _serialized_alignment_groups(fig, 'x')
+    original_y = _serialized_alignment_groups(fig, 'y')
+    reloaded_x = _serialized_alignment_groups(reloaded, 'x')
+    reloaded_y = _serialized_alignment_groups(reloaded, 'y')
+
+    assert original_x
+    assert original_y
+    assert original_x == reloaded_x
+    assert original_y == reloaded_y
+
+
 def test_figure_label():
     # pyplot figure creation, selection, and closing with label/number/instance
     plt.close('all')
