@@ -1,0 +1,7 @@
+HPacker top and bottom alignment now flush the expected edges
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+`matplotlib.offsetbox.HPacker` now aligns child boxes correctly when
+``align='top'`` or ``align='bottom'``. Top alignment keeps the top edges flush
+and bottom alignment keeps the bottom edges flush; previously the semantics
+were reversed. This is treated as a bug fix.
