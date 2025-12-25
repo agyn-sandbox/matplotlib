@@ -6068,6 +6068,80 @@ def test_move_offsetlabel():
     assert ax.xaxis.offsetText.get_verticalalignment() == 'bottom'
 
 
+def _axes_with_scientific_offsets():
+    fig, ax = plt.subplots()
+    x = np.linspace(1e10, 1e10 + 1, 3)
+    y = np.linspace(1e12, 1e12 + 1, 3)
+    ax.plot(x, y)
+    ax.ticklabel_format(style='sci', axis='both', scilimits=(0, 0))
+    fig.canvas.draw()
+    assert ax.xaxis.offsetText.get_text()
+    assert ax.yaxis.offsetText.get_text()
+    return fig, ax
+
+
+def test_offset_text_uses_labelcolor_from_rc():
+    rc = {
+        'xtick.labelcolor': 'red',
+        'ytick.labelcolor': 'green',
+        'xtick.color': 'black',
+        'ytick.color': 'black',
+    }
+    with matplotlib.rc_context(rc):
+        fig, ax = _axes_with_scientific_offsets()
+        try:
+            assert (
+                mcolors.to_rgba(ax.xaxis.offsetText.get_color())
+                == mcolors.to_rgba('red')
+            )
+            assert (
+                mcolors.to_rgba(ax.yaxis.offsetText.get_color())
+                == mcolors.to_rgba('green')
+            )
+        finally:
+            plt.close(fig)
+
+
+def test_offset_text_inherits_tick_color_when_labelcolor_inherit():
+    rc = {
+        'xtick.labelcolor': 'inherit',
+        'ytick.labelcolor': 'inherit',
+        'xtick.color': 'blue',
+        'ytick.color': 'magenta',
+    }
+    with matplotlib.rc_context(rc):
+        fig, ax = _axes_with_scientific_offsets()
+        try:
+            assert (
+                mcolors.to_rgba(ax.xaxis.offsetText.get_color())
+                == mcolors.to_rgba('blue')
+            )
+            assert (
+                mcolors.to_rgba(ax.yaxis.offsetText.get_color())
+                == mcolors.to_rgba('magenta')
+            )
+        finally:
+            plt.close(fig)
+
+
+def test_offset_text_follows_tick_params_labelcolor():
+    fig, ax = _axes_with_scientific_offsets()
+    try:
+        ax.tick_params(axis='x', labelcolor='purple')
+        ax.tick_params(axis='y', labelcolor='orange')
+        fig.canvas.draw()
+        assert (
+            mcolors.to_rgba(ax.xaxis.offsetText.get_color())
+            == mcolors.to_rgba('purple')
+        )
+        assert (
+            mcolors.to_rgba(ax.yaxis.offsetText.get_color())
+            == mcolors.to_rgba('orange')
+        )
+    finally:
+        plt.close(fig)
+
+
 @image_comparison(['rc_spines.png'], savefig_kwarg={'dpi': 40})
 def test_rc_spines():
     rc_dict = {
