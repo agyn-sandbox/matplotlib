@@ -1,3 +1,4 @@
+from io import BytesIO
 from itertools import product
 import platform
 
@@ -117,6 +118,17 @@ def test_inset_colorbar_tight_layout_smoketest():
     with pytest.warns(UserWarning, match="This figure includes Axes"):
         # Will warn, but not raise an error
         plt.tight_layout()
+
+
+def test_inset_axes_tight_bbox_smoketest():
+    fig, (ax, ax2) = plt.subplots(1, 2, figsize=(5.5, 2.8))
+    try:
+        inset_axes(ax, width=1.3, height=0.9)
+        buffer = BytesIO()
+        fig.savefig(buffer, format="png", bbox_inches="tight")
+        assert buffer.getbuffer().nbytes > 0
+    finally:
+        plt.close(fig)
 
 
 @image_comparison(['inset_locator.png'], style='default', remove_text=True)
