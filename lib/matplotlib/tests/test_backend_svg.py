@@ -550,6 +550,25 @@ def test_svg_escape():
         assert '&lt;&apos;&quot;&amp;&gt;"' in buf
 
 
+def test_annotationbbox_gid_svg():
+    fig, ax = plt.subplots()
+    text_box = mpl.offsetbox.TextArea("Annotation")
+    ab = mpl.offsetbox.AnnotationBbox(text_box, (0.5, 0.5))
+    ab.set_gid("ab_gid_test")
+    ax.add_artist(ab)
+
+    with BytesIO() as fd:
+        fig.savefig(fd, format='svg')
+        svg_bytes = fd.getvalue()
+
+    tree = xml.etree.ElementTree.fromstring(svg_bytes)
+    ns = "http://www.w3.org/2000/svg"
+    group = tree.find(f'.//{{{ns}}}g[@id="ab_gid_test"]')
+
+    assert group is not None
+    assert list(group), "AnnotationBbox group should contain drawn elements"
+
+
 @pytest.mark.parametrize("font_str", [
     "'DejaVu Sans', 'WenQuanYi Zen Hei', 'Arial', sans-serif",
     "'DejaVu Serif', 'WenQuanYi Zen Hei', 'Times New Roman', serif",
