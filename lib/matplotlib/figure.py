@@ -3164,6 +3164,24 @@ None}, default: None
         # re-attached to another.
         state.pop("canvas")
 
+        serialized_align = {axis: [] for axis in ("x", "y")}
+        align_groups = getattr(self, "_align_label_groups", None)
+        if align_groups is not None:
+            axes = self.axes
+            axis_lookup = {id(ax): idx for idx, ax in enumerate(axes)}
+            for axis_name, grouper in align_groups.items():
+                for group in grouper:
+                    indices = [
+                        axis_lookup[id(ax)]
+                        for ax in group
+                        if ax is not None and id(ax) in axis_lookup
+                    ]
+                    if indices:
+                        serialized_align[axis_name].append(indices)
+
+        state["_serialized_align_label_groups"] = serialized_align
+        state.pop("_align_label_groups", None)
+
         # discard any changes to the dpi due to pixel ratio changes
         state["_dpi"] = state.get('_original_dpi', state['_dpi'])
 
@@ -3179,6 +3197,7 @@ None}, default: None
     def __setstate__(self, state):
         version = state.pop('__mpl_version__')
         restore_to_pylab = state.pop('_restore_to_pylab', False)
+        serialized_align = state.pop('_serialized_align_label_groups', None)
 
         if version != mpl.__version__:
             _api.warn_external(
@@ -3186,6 +3205,22 @@ None}, default: None
                 f"is unlikely to function correctly.")
 
         self.__dict__ = state
+
+        self._align_label_groups = {"x": cbook.Grouper(), "y": cbook.Grouper()}
+        if serialized_align is not None:
+            axes = self.axes
+            for axis_name, groups in serialized_align.items():
+                grouper = self._align_label_groups.get(axis_name)
+                if grouper is None:
+                    continue
+                for group in groups:
+                    axes_group = [
+                        axes[idx] for idx in group
+                        if 0 <= idx < len(axes)
+                    ]
+                    if not axes_group:
+                        continue
+                    grouper.join(axes_group[0], *axes_group[1:])
 
         # re-initialise some of the unstored state information
         FigureCanvasBase(self)  # Set self.canvas.
