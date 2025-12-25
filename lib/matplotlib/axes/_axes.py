@@ -2180,11 +2180,15 @@ class Axes(_AxesBase):
             # wrap numpy arrays.
             try:
                 x0 = cbook._safe_first_finite(x0)
+            except StopIteration:
+                x0 = cbook.safe_first_element(x0)
             except (TypeError, IndexError, KeyError):
                 pass
 
             try:
                 x = cbook._safe_first_finite(xconv)
+            except StopIteration:
+                x = cbook.safe_first_element(xconv)
             except (TypeError, IndexError, KeyError):
                 x = xconv
 
