@@ -23,6 +23,7 @@ import matplotlib.colors as mcolors
 import matplotlib.dates as mdates
 from matplotlib.figure import Figure
 from matplotlib.axes import Axes
+from matplotlib.category import UnitData
 import matplotlib.font_manager as mfont_manager
 import matplotlib.markers as mmarkers
 import matplotlib.patches as mpatches
@@ -3034,6 +3035,67 @@ def test_stackplot_baseline():
     axs[0, 1].stackplot(range(100), d.T, baseline='sym')
     axs[1, 0].stackplot(range(100), d.T, baseline='wiggle')
     axs[1, 1].stackplot(range(100), d.T, baseline='weighted_wiggle')
+
+
+def _stackplot_sample_data():
+    x = ["16 May", "17 May"]
+    y1 = np.array([1, 2])
+    y2 = np.array([3, 1])
+    return x, y1, y2
+
+
+def test_stackplot_twinx_preserves_datalim():
+    fig, ax1 = plt.subplots()
+    x, y1, y2 = _stackplot_sample_data()
+    ax1.stackplot(x, y1, y2)
+    before = ax1.dataLim.intervaly
+
+    ax2 = ax1.twinx()
+    assert_allclose(ax1.dataLim.intervaly, before)
+
+    ax2.plot(x, [2, 4])
+    assert_allclose(ax1.dataLim.intervaly, before)
+
+
+def test_stackplot_twinx_reuses_unitdata():
+    fig, ax1 = plt.subplots()
+    x, y1, y2 = _stackplot_sample_data()
+    ax1.stackplot(x, y1, y2)
+
+    ax2 = ax1.twinx()
+    ax2.plot(x, [2, 4])
+
+    assert isinstance(ax1.xaxis.units, UnitData)
+    assert ax2.xaxis.units is ax1.xaxis.units
+
+
+def test_stackplot_twinx_numeric_x_units_none():
+    fig, ax1 = plt.subplots()
+    x = [0, 1]
+    y1 = np.array([1, 2])
+    y2 = np.array([3, 1])
+    ax1.stackplot(x, y1, y2)
+
+    ax2 = ax1.twinx()
+    ax2.plot(x, [2, 4])
+
+    assert ax1.xaxis.units is None
+    assert ax2.xaxis.units is None
+
+
+def test_stackplot_categorical_primary_axis_units():
+    fig, ax = plt.subplots()
+    x, y1, y2 = _stackplot_sample_data()
+    ax.stackplot(x, y1, y2)
+
+    assert isinstance(ax.xaxis.units, UnitData)
+
+    before = ax.dataLim.intervaly
+    ax.plot(x, [4, 5])
+    after = ax.dataLim.intervaly
+
+    assert after[0] <= before[0]
+    assert after[1] >= 5
 
 
 def _bxp_test_helper(

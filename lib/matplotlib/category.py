@@ -102,6 +102,19 @@ class StrCategoryConverter(units.ConversionInterface):
         """
         # the conversion call stack is default_units -> axis_info -> convert
         if axis.units is None:
+            axis_name = axis.axis_name
+            shared_axes = axis.axes._shared_axes[axis_name].get_siblings(
+                axis.axes)
+            for shared in shared_axes:
+                if shared is axis.axes:
+                    continue
+                sibling_axis = shared._axis_map[axis_name]
+                if isinstance(sibling_axis.units, UnitData):
+                    axis.units = sibling_axis.units
+                    axis._update_axisinfo()
+                    break
+
+        if axis.units is None:
             axis.set_units(UnitData(data))
         else:
             axis.units.update(data)
