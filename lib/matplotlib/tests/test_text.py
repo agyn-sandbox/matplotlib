@@ -15,6 +15,7 @@ import matplotlib.transforms as mtransforms
 from matplotlib.testing.decorators import check_figures_equal, image_comparison
 from matplotlib.testing._markers import needs_usetex
 from matplotlib.text import Text
+from matplotlib.backends.backend_agg import RendererAgg
 
 
 @image_comparison(['font_styles'])
@@ -195,6 +196,74 @@ def test_antialiasing():
     # test cleanup will do it for us.  In fact, if we do it here, it
     # will turn antialiasing back off before the images are actually
     # rendered.
+
+
+def _draw_with_renderer(renderer, text_obj, *, x=0, y=0):
+    gc = renderer.new_gc()
+    try:
+        renderer.draw_text(
+            gc,
+            x,
+            y,
+            text_obj.get_text(),
+            text_obj.get_fontproperties(),
+            0,
+            mtext=text_obj,
+        )
+    finally:
+        gc.restore()
+
+
+def test_text_antialias_override_rendereragg():
+    def render_with(text_config, rc_value):
+        renderer = RendererAgg(200, 200, 72)
+        text_obj = Text(50, 100, "override", fontsize=48)
+        text_config(text_obj)
+        with mpl.rc_context({'text.antialiased': rc_value}):
+            _draw_with_renderer(renderer, text_obj, x=50, y=100)
+        alpha = np.unique(np.asarray(renderer.buffer_rgba())[..., 3])
+        return [int(v) for v in alpha]
+
+    aa_false = render_with(lambda text: text.set_antialiased(False), True)
+    assert aa_false == [0, 255]
+
+    aa_true = render_with(lambda text: text.set_antialiased(True), False)
+    assert len(aa_true) > 2
+
+
+def test_text_antialias_none_falls_back():
+    def render_with(text_config):
+        renderer = RendererAgg(200, 200, 72)
+        text_obj = Text(50, 100, "fallback", fontsize=48)
+        text_config(text_obj)
+        with mpl.rc_context({'text.antialiased': False}):
+            _draw_with_renderer(renderer, text_obj, x=50, y=100)
+        alpha = np.unique(np.asarray(renderer.buffer_rgba())[..., 3])
+        return [int(v) for v in alpha]
+
+    fallback_false = render_with(lambda text: text.set_antialiased(False))
+
+    def configure_none(text):
+        text.set_antialiased(True)
+        text.set_antialiased(None)
+
+    fallback_none = render_with(configure_none)
+    assert fallback_none == fallback_false
+
+
+def test_rendereragg_text_antialias_respects_gc():
+    renderer = RendererAgg(200, 200, 72)
+    gc = renderer.new_gc()
+    try:
+        gc.set_text_antialiased(False)
+        font_props = FontProperties(size=48)
+        with mpl.rc_context({'text.antialiased': True}):
+            renderer.draw_text(gc, 50, 100, "gc", font_props, 0, mtext=None)
+    finally:
+        gc.restore()
+
+    alpha = np.unique(np.asarray(renderer.buffer_rgba())[..., 3])
+    assert alpha.tolist() == [0, 255]
 
 
 def test_afm_kerning():
@@ -824,7 +893,7 @@ def test_parse_math():
     fig.canvas.draw()
 
     ax.text(0, 0, r"$ \wrong{math} $", parse_math=True)
-    with pytest.raises(ValueError, match='Unknown symbol'):
+    with pytest.raises(ValueError, match=r'(Unknown symbol|Expected token)'):
         fig.canvas.draw()
 
 
@@ -832,7 +901,7 @@ def test_parse_math_rcparams():
     # Default is True
     fig, ax = plt.subplots()
     ax.text(0, 0, r"$ \wrong{math} $")
-    with pytest.raises(ValueError, match='Unknown symbol'):
+    with pytest.raises(ValueError, match=r'(Unknown symbol|Expected token)'):
         fig.canvas.draw()
 
     # Setting rcParams to False

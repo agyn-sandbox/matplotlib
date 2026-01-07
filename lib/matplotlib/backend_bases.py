@@ -763,6 +763,7 @@ class GraphicsContextBase:
         self._alpha = 1.0
         self._forced_alpha = False  # if True, _alpha overrides A from RGBA
         self._antialiased = 1  # use 0, 1 not True, False for extension code
+        self._text_antialiased = None
         self._capstyle = CapStyle('butt')
         self._cliprect = None
         self._clippath = None
@@ -784,6 +785,7 @@ class GraphicsContextBase:
         self._alpha = gc._alpha
         self._forced_alpha = gc._forced_alpha
         self._antialiased = gc._antialiased
+        self._text_antialiased = gc._text_antialiased
         self._capstyle = gc._capstyle
         self._cliprect = gc._cliprect
         self._clippath = gc._clippath
@@ -816,6 +818,10 @@ class GraphicsContextBase:
     def get_antialiased(self):
         """Return whether the object should try to do antialiased rendering."""
         return self._antialiased
+
+    def get_text_antialiased(self):
+        """Return whether text should be rendered with antialiasing."""
+        return self._text_antialiased
 
     def get_capstyle(self):
         """Return the `.CapStyle`."""
@@ -911,6 +917,10 @@ class GraphicsContextBase:
         """Set whether object should be drawn with antialiased rendering."""
         # Use ints to make life easier on extension code trying to read the gc.
         self._antialiased = int(bool(b))
+
+    def set_text_antialiased(self, b):
+        """Set whether text should be drawn with antialiased rendering."""
+        self._text_antialiased = None if b is None else int(bool(b))
 
     @_docstring.interpd
     def set_capstyle(self, cs):
