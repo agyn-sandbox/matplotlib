@@ -1307,6 +1307,15 @@ class _AxesBase(martist.Artist):
         self._get_lines = _process_plot_var_args(self)
         self._get_patches_for_fill = _process_plot_var_args(self, 'fill')
 
+        legend = getattr(self, "legend_", None)
+        if legend is not None:
+            legend.remove()
+
+        for child in list(getattr(self, "_children", ())):
+            if child is legend:
+                continue
+            child.remove()
+
         self._gridOn = mpl.rcParams['axes.grid']
         self._children = []
         self._mouseover_set = _OrderedSet()

@@ -947,7 +947,19 @@ default: %(va)s
 
         for ax in tuple(self.axes):  # Iterate over the copy.
             ax.clear()
-            self.delaxes(ax)  # Remove ax from self._axstack.
+            ax.remove()
+
+        for artist_list in (
+                self.artists,
+                self.lines,
+                self.patches,
+                self.texts,
+                self.images,
+                self.legends):
+            for artist in list(artist_list):
+                artist.remove()
+                if getattr(artist, "figure", None) is not None:
+                    artist.figure = None
 
         self.artists = []
         self.lines = []
