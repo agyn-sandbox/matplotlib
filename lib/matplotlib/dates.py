@@ -592,13 +592,40 @@ def drange(dstart, dend, delta):
 
 
 def _wrap_in_tex(text):
-    p = r'([a-zA-Z]+)'
-    ret_text = re.sub(p, r'}$\1$\\mathdefault{', text)
+    def _protect_segment(segment):
+        return (segment
+                .replace('-', '{-}')
+                .replace(':', '{:}')
+                .replace(' ', '\\;'))
 
-    # Braces ensure dashes are not spaced like binary operators.
-    ret_text = '$\\mathdefault{'+ret_text.replace('-', '{-}')+'}$'
-    ret_text = ret_text.replace('$\\mathdefault{}$', '')
-    return ret_text
+    parts = []
+    math_buffer = []
+
+    def _flush_math_buffer():
+        if math_buffer:
+            segment = ''.join(math_buffer)
+            if segment:
+                # Braces ensure dashes and colons are not spaced like
+                # binary operators; spaces expand using a thin math skip.
+                parts.append(f'$\\mathdefault{{{segment}}}$')
+            math_buffer.clear()
+
+    last_index = 0
+    for match in re.finditer(r'([a-zA-Z]+)', text):
+        start, end = match.span()
+        nonletters = text[last_index:start]
+        if nonletters:
+            math_buffer.append(_protect_segment(nonletters))
+        _flush_math_buffer()
+        parts.append(match.group(0))
+        last_index = end
+
+    trailing = text[last_index:]
+    if trailing:
+        math_buffer.append(_protect_segment(trailing))
+    _flush_math_buffer()
+
+    return ''.join(parts)
 
 
 ## date tickers and formatters ###

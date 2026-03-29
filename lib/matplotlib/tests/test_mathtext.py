@@ -132,17 +132,18 @@ uppergreek = ("\\Gamma \\Delta \\Theta \\Lambda \\Xi \\Pi \\Sigma \\Upsilon \\Ph
 lowergreek = ("\\alpha \\beta \\gamma \\delta \\epsilon \\zeta \\eta \\theta \\iota "
               "\\lambda \\mu \\nu \\xi \\pi \\kappa \\rho \\sigma \\tau \\upsilon "
               "\\phi \\chi \\psi")
-all = [digits, uppercase, lowercase, uppergreek, lowergreek]
+all_char_sets = [digits, uppercase, lowercase, uppergreek, lowergreek]
+# Avoid shadowing Python's built-in 
 
 # Use stubs to reserve space if tests are removed
 # stub should be of the form (None, N) where N is the number of strings that
 # used to be tested
 # Add new tests at the end.
 font_test_specs = [
-    ([], all),
-    (['mathrm'], all),
-    (['mathbf'], all),
-    (['mathit'], all),
+    ([], all_char_sets),
+    (['mathrm'], all_char_sets),
+    (['mathbf'], all_char_sets),
+    (['mathit'], all_char_sets),
     (['mathtt'], [digits, uppercase, lowercase]),
     (None, 3),
     (None, 3),

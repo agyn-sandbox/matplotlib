@@ -70,6 +70,15 @@ def test_date2num_NaT_scalar(units):
     assert np.isnan(tmpl)
 
 
+def test_wrap_in_tex_protects_characters():
+    from matplotlib.dates import _wrap_in_tex
+
+    assert _wrap_in_tex('12:34') == '$\\mathdefault{12{:}34}$'
+    assert _wrap_in_tex('2021-01-02') == '$\\mathdefault{2021{-}01{-}02}$'
+    assert _wrap_in_tex('Jan 02 1990') == 'Jan$\\mathdefault{\\;02\\;1990}$'
+    assert _wrap_in_tex('00:00:59') == '$\\mathdefault{00{:}00{:}59}$'
+
+
 def test_date_empty():
     # make sure we do the right thing when told to plot dates even
     # if no date data has been presented, cf
